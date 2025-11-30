@@ -1,0 +1,51 @@
+#!/bin/sh
+
+##
+# Input a book as an epub file; output the book cover image.
+#
+# Syntax:
+#
+#    epub-file-to-cover-image <book.epub>
+#
+# Example:
+#
+#    epub-file-to-cover-image book.epub
+#
+# The output file is named cover.jpg.
+#
+# This script is deliberately simple:
+#
+#   - The epub file must use a typical zip format.
+#
+#   - The epub file must contain './images/cover.jpg'
+#
+# If your needs are different, then adjust as you wish.
+##
+
+set -euf
+. "$(dirname "$(readlink -f "$0")")/unix-shell-script-kit"
+
+# Vet dependencies
+command_exists_or_die mktemp
+command_exists_or_die rsync
+command_exists_or_die unzip
+
+# Get application info
+app=$0
+app_base=$(basename "$0")
+app_stem=${app_base%.*}
+
+# Get epub file info
+file_path="$1"
+file_exists_or_die "$file_path"
+file_base=$(basename "$1")
+file_stem=${file_base%.*}
+
+# Set temporary directory
+temp=$(mktemp_directory "$app_stem-$file_stem")
+directory_exists_or_die "$temp"
+trap 'rm -rf -- "$temp"' EXIT
+
+# Copy cover image
+unzip -qq -d "$temp" "$file_path" 
+rsync -a "$temp/images/cover.jpg" cover.jpg
